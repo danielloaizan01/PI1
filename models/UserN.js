@@ -33,7 +33,10 @@ const userNSchema = new eschema({
     },
     password: {
         type: String
+    }, idtoken: {
+        type: String
     }
+
 }, {timestamps:true})
 
 const UserN = mongoose.model('UserN', userNSchema)

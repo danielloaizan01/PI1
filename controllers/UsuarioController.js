@@ -81,48 +81,50 @@ const store = (req, res, next) => {
 // Actualizar usuario
 
 const update = (req, res, next) => {
-    let usuarioID = req.body.usuarioID
-
+    let idtoken = req.body.idtoken;
+  
     let updatedData = {
-        nombre: req.body.nombre,
-        apellido: req.body.apellido,
-        cc: req.body.cc,
-        correo: req.body.correo,
-        telefono: req.body.telefono,
-        edad: req.body.edad,
-        sexo: req.body.sexo,
-        tipoVinculo: req.body.tipoVinculo,
-        formacion: req.body.formacion
-    }
-    Usuario.findByIdAndUpdate(usuarioID, {$set: updatedData})
-    .then(() => {
+      nombre: req.body.nombre,
+      apellido: req.body.apellido,
+      cc: req.body.cc,
+      correo: req.body.correo,
+      telefono: req.body.telefono,
+      edad: req.body.edad,
+      sexo: req.body.sexo,
+      tipoVinculo: req.body.tipoVinculo,
+      formacion: req.body.formacion
+    };
+  
+    UserN.updateOne({ idtoken }, { $set: updatedData })
+      .then(() => {
         res.json({
-            message: 'Usuario actualizado correctamente'
-        })
-    })
-    .catch(error => {
+          message: 'Usuario actualizado correctamente'
+        });
+      })
+      .catch(error => {
         res.json({
-            mesage: 'A ocurridoun error'
-        })
-    })
-}
-
-// eliminar usuario
-const destroy = (req, res, next) => {
-    let usuarioID = req.body.usuarioID
-    Usuario.findByIdAndRemove(usuarioID)
-    .then(() => {
+          message: 'Ha ocurrido un error',
+          error: error.message
+        });
+      });
+  };
+  
+  const destroy = (req, res, next) => {
+    let idtoken = req.body.idtoken;
+  
+    UserN.findOneAndRemove({ idtoken })
+      .then(() => {
         res.json({
-            message: 'Usuario eliminado'
-        })
-    })
-    .catch(error => {
+          message: 'Usuario eliminado'
+        });
+      })
+      .catch(error => {
         res.json({
-            message: 'An error Ocurred!'
-        })
-    })
-}
-
+          message: 'Ha ocurrido un error',
+          error: error.message
+        });
+      });
+  };
 module.exports = {
     index,show,store,update,destroy
 }

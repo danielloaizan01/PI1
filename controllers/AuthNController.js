@@ -20,7 +20,8 @@ const register = (req, res, next) => {
       sexo: req.body.sexo,
       tipoVinculo: req.body.tipoVinculo,
       formacion: req.body.formacion,
-      password: hashedPass
+      password: hashedPass,
+      idtoken: req.body.idtoken
     });
 
     user.save()
@@ -39,43 +40,52 @@ const register = (req, res, next) => {
 };
 
 const login = (req, res, next) => {
-  var usernombre = req.body.usernombre;
+  var usernombre = req.body.correo;
   var password = req.body.password;
 
   UserN.findOne({ $or: [{ correo: usernombre }, { telefono: usernombre }] })
     .then(user => {
-      if (!user) {
-        return res.status(404).json({
-          message: 'No user found! :c'
+      if (user) {
+        bcrypt.compare(password, user.password, function(err, result) {
+          if (err) {
+            res.json({
+              error: err
+            });
+          }
+          if (result) {
+            let token = jwt.sign({ userID: user._id, correo: user.correo }, 'AzQ,PI)0(', { expiresIn: '15m' });
+            let refreshToken = jwt.sign({ userID: user._id, correo: user.correo }, 'refreshtokenensecret', { expiresIn: '10m' });
+
+            UserN.findByIdAndUpdate(user._id, { idtoken: token }) // Actualizar el campo "idtoken" con el valor del token
+              .then(() => {
+                res.status(200).json({
+                  message: 'Inicio de sesión exitoso',
+                  token,
+                  refreshToken
+                });
+              })
+              .catch(error => {
+                res.status(500).json({
+                  message: 'Ocurrió un error al actualizar el campo "idtoken" en la base de datos',
+                  error: error.message
+                });
+              });
+          } else {
+            res.status(200).json({
+              message: 'La contraseña no coincide'
+            });
+          }
+        });
+      } else {
+        res.json({
+          message: 'No se encontró el usuario'
         });
       }
-
-      bcrypt.compare(password, user.password, function(err, result) {
-        if (err) {
-          return res.status(500).json({
-            error: err
-          });
-        }
-
-        if (result) {
-          let token = jwt.sign({ name: user.nombre }, 'AzQ,PI)0(', { expiresIn: '1h' });
-          let refreshToken = jwt.sign({ name: user.nombre }, 'refreshtokenensecret', { expiresIn: '12h' });
-
-          res.status(200).json({
-            message: 'Login successful',
-            token,
-            refreshToken
-          });
-        } else {
-          res.status(200).json({
-            message: 'Password does not match!'
-          });
-        }
-      });
     })
     .catch(error => {
-      res.status(500).json({
-        message: 'An error occurred!'
+      res.json({
+        message: 'Ocurrió un error',
+        error: error.message
       });
     });
 };
@@ -90,8 +100,8 @@ const refreshToken = (req, res, next) => {
       });
     }
 
-    let token = jwt.sign({ name: decode.nombre }, 'AzQ,PI)0(', { expiresIn: '1h' });
-    let newRefreshToken = jwt.sign({ name: decode.nombre }, 'refreshtokensecret', { expiresIn: '12h' });
+    let token = jwt.sign({ name: decode.nombre }, 'AzQ,PI)0(', { expiresIn: '15m' });
+    let newRefreshToken = jwt.sign({ name: decode.nombre }, 'refreshtokensecret', { expiresIn: '10m' });
 
     res.status(200).json({
       message: 'Token refreshed successfully',
@@ -101,40 +111,28 @@ const refreshToken = (req, res, next) => {
   });
 };
 
-// Traer mis datos
 const show = (req, res, next) => {
-  const token = req.headers.authorization;
-  if (!token) {
-    return res.status(401).json({ message: 'No se proporcionó un token de autenticación' });
-  }
-
-  jwt.verify(token, 'AzQ,PI)0(', (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ message: 'Token de autenticación inválido' });
-    }
-
-    const usuarioID = decoded.name; // Ajusta el nombre del campo del token que contiene el ID del usuario
-    UserN.findById(usuarioID)
-      .then(response => {
-        if (!response) {
-          return res.status(404).json({ message: 'Usuario no encontrado' });
-        }
-        res.json({
-          response
-        });
-      })
-      .catch(error => {
-        res.status(500).json({
-          message: 'Ocurrió un error al obtener los datos del usuario'
-        });
+  let idtoken = req.body.idtoken;
+  UserN.findOne({ idtoken })
+    .then(response => {
+      if (!response) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+      res.json({ response });
+    })
+    .catch(error => {
+      res.status(500).json({
+        message: 'Ocurrió un error al obtener los datos del usuario',
+        error: error.message
       });
-  });
+    });
 };
 
 
 // Actualizar usuario
+
 const update = (req, res, next) => {
-  let usuarioID = req.body.usuarioID;
+  let idtoken = req.body.idtoken;
 
   let updatedData = {
     nombre: req.body.nombre,
@@ -148,34 +146,37 @@ const update = (req, res, next) => {
     formacion: req.body.formacion
   };
 
-  UserN.findByIdAndUpdate(usuarioID, { $set: updatedData })
+  UserN.updateOne({ idtoken }, { $set: updatedData })
     .then(() => {
       res.json({
         message: 'Usuario actualizado correctamente'
       });
     })
     .catch(error => {
-      res.status(500).json({
-        message: 'Ha ocurrido un error'
+      res.json({
+        message: 'Ha ocurrido un error',
+        error: error.message
       });
     });
 };
 
-// Eliminar usuario
 const destroy = (req, res, next) => {
-  let usuarioID = req.body.usuarioID;
-  UserN.findByIdAndRemove(usuarioID)
+  let idtoken = req.body.idtoken;
+
+  UserN.findOneAndRemove({ idtoken })
     .then(() => {
       res.json({
         message: 'Usuario eliminado'
       });
     })
     .catch(error => {
-      res.status(500).json({
-        message: 'An error occurred!'
+      res.json({
+        message: 'Ha ocurrido un error',
+        error: error.message
       });
     });
 };
+
 
 module.exports = {
   register,
