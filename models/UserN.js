@@ -35,7 +35,11 @@ const userNSchema = new eschema({
         type: String
     }, idtoken: {
         type: String
-    }
+    },
+    usuariosRegistrados: [{
+        type: eschema.Types.ObjectId,
+        ref: 'Usuario'
+    }]
 
 }, {timestamps:true})
 

@@ -23,6 +23,11 @@ const eventoSchema = new eschema({
     aforo: {
         type: String
     }
+    ,
+    usuariosRegistrados: [{
+        type: eschema.Types.ObjectId,
+        ref: 'Usuario'
+    }]
 }, { timestamps: true });
 
 const Evento = mongoose.model('Evento', eventoSchema);
