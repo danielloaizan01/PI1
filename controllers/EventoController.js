@@ -1,6 +1,7 @@
 const Evento = require('../models/Evento');
+const Usuario = require('../models/Usuario.js');
 const UserN = require('../models/UserN');
-const Usuario = require('../models/Usuario');
+
 const bcrypt = require('bcryptjs');
 
 // Lista de eventos
@@ -192,13 +193,12 @@ const registerUser = (req, res, next) => {
         });
     });
   };
-  
-const getUsersRegistered = (req, res, next) => {
+
+  const getUsersRegistered = (req, res, next) => {
     let eventoID = req.params.eventoID;
   
     Evento.findById(eventoID)
-      .populate('usuariosRegistrados')
-      .select('usuariosRegistrados -_id')
+      .populate('usuariosRegistrados', '-_id') // Excluir el campo '_id' de los usuarios registrados
       .exec()
       .then(evento => {
         if (!evento) {
@@ -210,11 +210,11 @@ const getUsersRegistered = (req, res, next) => {
       })
       .catch(error => {
         res.status(500).json({
-          message: 'Error al obtener los usuarios registrados'
+          message: 'Error al obtener los usuarios registrados',
+          error: error.message
         });
       });
   };
-  
 
 module.exports = {
   index,

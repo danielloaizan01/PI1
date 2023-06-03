@@ -33,5 +33,5 @@ const usuarioSchema = new eschema({
     }
 }, {timestamps:true})
 
-const Usuario = mongoose.model('Usuarios', usuarioSchema)
+const Usuario = mongoose.model('Usuario', usuarioSchema);
 module.exports = Usuario

@@ -9,6 +9,7 @@ router.post('/login', AuthNController.login);
 router.post('/show', AuthNController.show);
 router.post('/update', AuthNController.update);
 router.post('/delete', AuthNController.destroy);
+router.post('/unregister/evento', AuthNController.unregisterFromEvent);
 router.post('/refresh-token', AuthNController.refreshToken);
 
 module.exports = router;

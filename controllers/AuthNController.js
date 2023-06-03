@@ -1,6 +1,7 @@
 const UserN = require('../models/UserN');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Evento = require('../models/Evento');
 
 const register = (req, res, next) => {
   bcrypt.hash(req.body.password, 10, function(err, hashedPass) {
@@ -177,6 +178,54 @@ const destroy = (req, res, next) => {
     });
 };
 
+// Eliminar registro de usuario en un evento
+const unregisterFromEvent = (req, res, next) => {
+  try {
+    let eventoID = req.body.eventoID; // ID del evento
+    let usuarioID = req.body.usuarioID; // ID del usuario
+
+    Evento.findById(eventoID)
+      .exec()
+      .then(evento => {
+        if (!evento) {
+          return res.status(404).json({
+            message: 'Evento no encontrado'
+          });
+        }
+
+        // Buscar el índice del usuario en la matriz de usuarios registrados
+        const index = evento.usuariosRegistrados.indexOf(usuarioID);
+
+        if (index === -1) {
+          return res.status(404).json({
+            message: 'Usuario no registrado en el evento'
+          });
+        }
+
+        // Eliminar el ID del usuario de la matriz de usuarios registrados
+        evento.usuariosRegistrados.splice(index, 1);
+
+        // Guardar el evento actualizado
+        return evento.save();
+      })
+      .then(savedEvento => {
+        return res.json({
+          message: 'Usuario eliminado del evento exitosamente'
+        });
+      })
+      .catch(error => {
+        return res.status(500).json({
+          message: 'Error al eliminar el usuario del evento',
+          error: error.message // Capturamos el mensaje de error para enviarlo en la respuesta
+        });
+      });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Error al procesar la solicitud',
+      error: error.message // Capturamos el mensaje de error para enviarlo en la respuesta
+    });
+  }
+};
 
 module.exports = {
   register,
@@ -184,5 +233,6 @@ module.exports = {
   refreshToken,
   show,
   update,
-  destroy
+  destroy,
+  unregisterFromEvent
 };
